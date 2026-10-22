@@ -1,0 +1,81 @@
+name: warm-up
+
+# Every 5 minutes on weekdays, 12:00-23:55 UTC (covers 08:00-19:55 New York in summer and winter).
+# The tool itself decides what is due; runs outside working hours only pick up late replies.
+on:
+  schedule:
+    - cron: "*/5 12-23 * * 1-5"
+  workflow_dispatch:
+
+concurrency:
+  group: warmup
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  tick:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: warmup
+    env:
+      STATE_KEY: ${{ secrets.WARMUP_STATE_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: warmup/requirements.txt
+      - run: pip install -q -r requirements.txt
+
+      - name: Restore encrypted state
+        run: |
+          test -n "$STATE_KEY" || { echo "::error::WARMUP_STATE_KEY secret is not set"; exit 1; }
+          mkdir -p data
+          if git fetch -q --depth 1 origin warmup-state 2>/dev/null; then
+            git show FETCH_HEAD:state.enc > "$RUNNER_TEMP/state.enc"
+            # Fails the job on a wrong key: never run without state (that could double-send).
+            openssl enc -d -aes-256-cbc -pbkdf2 -pass env:STATE_KEY -in "$RUNNER_TEMP/state.enc" | tar xz
+          fi
+
+      - name: Tick
+        id: tick
+        env:
+          WARMUP_TOKEN_AWAIS_JSON: ${{ secrets.WARMUP_TOKEN_AWAIS_JSON }}
+          WARMUP_TOKEN_SALMAN_JSON: ${{ secrets.WARMUP_TOKEN_SALMAN_JSON }}
+          WARMUP_TOKEN_KINZA_JSON: ${{ secrets.WARMUP_TOKEN_KINZA_JSON }}
+        run: |
+          LIVE=$(python -c "import yaml;print('--live' if yaml.safe_load(open('config.yaml')).get('github_actions_live') else '')")
+          echo "mode: ${LIVE:-dry-run}"
+          # Full output (subjects etc.) stays in the encrypted state; the public log shows counts only.
+          set +e
+          python -m warmup tick $LIVE > data/last_run.log 2>&1
+          code=$?
+          set -e
+          cat data/last_run.log >> data/run_history.log
+          tail -c 200000 data/run_history.log > data/run_history.tmp && mv data/run_history.tmp data/run_history.log
+          for d in data/live data/dry-run; do
+            if [ -f "$d/daily.csv" ]; then echo "$d:"; cut -d, -f1-5 "$d/daily.csv" | tail -4; fi
+          done
+          if [ $code -ne 0 ]; then
+            echo "::error::warm-up run failed or raised an ALERT (exit $code). Last lines:"
+            tail -n 15 data/last_run.log
+          fi
+          exit $code
+
+      - name: Save encrypted state
+        if: always() && steps.tick.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          tar cz data | openssl enc -aes-256-cbc -pbkdf2 -salt -pass env:STATE_KEY -out "$RUNNER_TEMP/state.enc"
+          cd "$RUNNER_TEMP" && rm -rf st && mkdir st && cd st
+          git init -q -b warmup-state
+          cp ../state.enc .
+          git add state.enc
+          git -c user.name=warmup-bot -c user.email=warmup-bot@users.noreply.github.com commit -qm "state $(date -u +%FT%TZ)"
+          git push -q -f "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" warmup-state

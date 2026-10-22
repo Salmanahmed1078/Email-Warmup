@@ -260,17 +260,9 @@ class Runner:
         self.log.upsert_daily(rows)
         if not (self.sheets and self.live):
             return
-        info = self._day(day)
-        append = self.cfg.raw["sheets"].get("mode") == "append"
-        day_over = self.now() >= self.cfg.at(day, self.cfg.work_end()) and not any(
-            a["status"] == "planned" and a["at"][:10] == day.isoformat() for a in self.s["actions"])
-        if append and (info.get("sheet_done") or not day_over):
-            return
         err = self.sheets.push(day, rows)
         if err:
             self.out(f"{self.tag}{err}")
-        elif append:
-            info["sheet_done"] = True
 
     def prune(self) -> None:
         cutoff = (self.now() - dt.timedelta(days=KEEP_DAYS)).date().isoformat()
@@ -284,12 +276,12 @@ class Runner:
 
     # ------------------------------------------------------------ entry point
     def tick(self, window_min: float = 0) -> int:
-        """Returns 0 normally, 2 when sending is stopped by an alert."""
+        """Returns 2 on the run that raises a new alert (so cron/CI reports a failure once), else 0."""
         now = self.now()
         day = now.date()
         if self.s["alert"]:
             self.out(f"{self.tag}STOPPED by alert ({self.s['alert']['reason']}). Run 'clear-alert' after checking.")
-            return 2
+            return 0
         if not is_working_day(self.cfg, day) or week_number(self.cfg, day) == 0:
             self.out(f"{self.tag}{day} is not a warm-up day; nothing to do")
             return 0

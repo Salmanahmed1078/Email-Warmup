@@ -26,16 +26,19 @@ company: Trilles AI
 inboxes:
   awais:
     email: awais@trilles-ai.com
-    full_name: "Awais"              # TODO: full name
-    title: "Co-Founder"             # TODO: confirm title
+    full_name: "Awais"
+    title: "Founder & CEO"
   salman:
     email: salman@trilles-ai.com
-    full_name: "Salman Ahmed"       # TODO: confirm
-    title: "Co-Founder"             # TODO: confirm title
+    full_name: "Salman"
+    title: "Founder & CTO"
   kinza:
     email: kinza@trilles-ai.com
-    full_name: "Kinza"              # TODO: full name
-    title: "Operations Lead"        # TODO: confirm title
+    full_name: "Kinza"
+    title: "Growth Engineer"
+
+# GitHub Actions only sends for real when this is true (the CLI itself always needs --live).
+github_actions_live: false
 
 paths:
   secrets_dir: secrets
@@ -43,12 +46,12 @@ paths:
 
 # Optional Google Sheets logging ("Daily Scoreboard").
 sheets:
-  enabled: false
-  spreadsheet_id: ""                # the long ID from the sheet URL
+  enabled: true
+  spreadsheet_id: "1KLxBnY9UV76m9rcUf-9ciJwfiU2II6EF-0LPPIDqAxI"   # "Email Warmup Sheet"
   token_inbox: salman               # whose OAuth token also carries the Sheets scope
-  tab: "Daily Scoreboard"
-  # mode "append": appends one row per inbox per day: date, inbox, sent, replied, rescued, problems
+  tab: "warm-up"
+  # mode "upsert": one row per inbox per day (date, inbox, sent, replied, rescued, problems), updated every run
   # mode "row": finds the row whose column A is row_label and the column whose row-1 header is today's date,
   #             and writes "S x / R y / Sp z / P n" (all inboxes combined) into that cell.
-  mode: row
+  mode: upsert
   row_label: "warm-up"

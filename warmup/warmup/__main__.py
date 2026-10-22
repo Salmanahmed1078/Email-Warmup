@@ -66,10 +66,11 @@ def cmd_run_day(cfg, args) -> int:
                        sleep=time.sleep if args.live else (lambda s: None), sheets=sheets)
             code = r.tick(0)
             nxt = r.next_due()
+            stopped = bool(st.data["alert"])
         now = dt.datetime.now(cfg.tz)
         end = cfg.at(now.date(), cfg.work_end())
-        if code == 2:
-            return 2
+        if code == 2 or stopped:
+            return code
         if not args.live:
             print("[dry-run] run-day does one pass in dry-run mode; use 'simulate' to see a whole day")
             return 0
@@ -116,7 +117,7 @@ def cmd_simulate(cfg, args) -> int:
             day = start + dt.timedelta(days=d)
             clock[0] = cfg.at(day, dt.time(8, 30))
             while clock[0] < cfg.at(day, dt.time(18, 0)):
-                if r.tick(0) == 2:
+                if r.tick(0) == 2 or st.data["alert"]:
                     print("[sim] stopped by alert")
                     break
                 clock[0] += dt.timedelta(minutes=5)

@@ -8,24 +8,50 @@ The emails come from a fixed pool (`warmup/pool.yaml`), so running costs no LLM 
 
 **Everything is a dry run unless you pass `--live`.**
 
-## Setup
+## Setup (one time, about 20 minutes)
 
+### 1. Google Cloud (no billing needed)
+Sign in to console.cloud.google.com as salman@trilles-ai.com. If a "set up organization/billing" wizard
+appears, close it.
+1. Create a project, for example `trilles-warmup`.
+2. APIs & Services > Library: enable **Gmail API** and **Google Sheets API**.
+3. OAuth consent screen: User type **Internal**, with the app name, support email and developer email.
+   Scopes: `.../auth/gmail.modify` and `.../auth/spreadsheets`.
+4. Credentials > Create credentials > OAuth client ID > **Desktop app**. Download the JSON.
+5. If Workspace Admin > Security > API controls blocks unconfigured apps, mark this app as **Trusted**.
+
+### 2. Sign in each inbox (on your own computer, Python 3.10+)
 ```bash
-cd warmup
+git clone https://github.com/Salmanahmed1078/Email-Warmup && cd Email-Warmup/warmup
 python3 -m venv .venv && .venv/bin/pip install -r requirements.txt
-.venv/bin/python -m warmup check          # validates pool, config, shows which tokens are missing
+# save the downloaded JSON as warmup/secrets/client_secret.json
+.venv/bin/python -m warmup auth --inbox salman   # browser opens: sign in as salman@, click Allow
+.venv/bin/python -m warmup auth --inbox awais    # sign in as awais@ (use a private window if needed)
+.venv/bin/python -m warmup auth --inbox kinza    # sign in as kinza@
+.venv/bin/python -m warmup check                 # all three tokens should show "present"
+.venv/bin/python -m warmup tick                  # dry run against the real inboxes: reads only
 ```
+Tokens are written to `secrets/token_<inbox>.json` (gitignored, mode 600). Never paste them into chat.
 
-1. Fill in names and titles in `config.yaml` (they are used in the signature).
-2. Put the OAuth client file in `secrets/client_secret.json` (Desktop-app OAuth client, Gmail API enabled).
-3. Sign in once per inbox (opens a browser, sign in as that inbox):
-   ```bash
-   .venv/bin/python -m warmup auth --inbox awais
-   .venv/bin/python -m warmup auth --inbox salman
-   .venv/bin/python -m warmup auth --inbox kinza
-   ```
-   Tokens land in `secrets/token_<inbox>.json` (gitignored, mode 600). On hosted runners you can instead
-   set `WARMUP_CLIENT_SECRET_JSON` and `WARMUP_TOKEN_<INBOX>_JSON` env vars (raw or base64 JSON).
+### 3. GitHub Actions secrets (the runner that sends without you)
+GitHub > repo **Settings > Secrets and variables > Actions > New repository secret**. Add four secrets.
+Each value is the full content of the file:
+
+| Secret name | Value |
+|---|---|
+| `WARMUP_TOKEN_SALMAN_JSON` | contents of `secrets/token_salman.json` |
+| `WARMUP_TOKEN_AWAIS_JSON` | contents of `secrets/token_awais.json` |
+| `WARMUP_TOKEN_KINZA_JSON` | contents of `secrets/token_kinza.json` |
+| `WARMUP_STATE_KEY` | any long random password (it encrypts the saved state and logs) |
+
+The token files hold the OAuth client ID and secret, so no separate client secret is needed.
+The workflow `.github/workflows/warmup.yml` runs every 5 minutes on weekdays. It starts in **dry-run**.
+To send for real, set `github_actions_live: true` in `config.yaml`. State and logs go to the
+`warmup-state` branch, encrypted. The public Actions log only shows counts. The Google Sheet
+("warm-up" tab) gets one row per inbox per day.
+
+### Running on your own server instead
+Use `deploy/crontab.txt` or the systemd units in `deploy/`, with `tick --live` every 5 minutes.
 
 ## Try it without sending anything
 

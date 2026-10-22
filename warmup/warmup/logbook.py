@@ -52,12 +52,21 @@ class SheetsSink:
     def push(self, day: dt.date, rows: list[dict]) -> str | None:
         try:
             sid, tab = self.cfg["spreadsheet_id"], self.cfg["tab"]
-            if self.cfg.get("mode") == "append":
-                values = [[r[k] for k in DAILY_FIELDS] for r in rows]
-                # One append per day: replace by clearing earlier rows is not possible safely,
-                # so append only on the final push of the day (caller decides).
-                self.svc.values().append(spreadsheetId=sid, range=f"'{tab}'!A1", valueInputOption="USER_ENTERED",
-                                         body={"values": values}).execute()
+            if self.cfg.get("mode", "upsert") == "upsert":
+                rng = f"'{tab}'!A1:F2000"
+                grid = self.svc.values().get(spreadsheetId=sid, range=rng).execute().get("values", [])
+                if not grid:
+                    grid = [DAILY_FIELDS]
+                where = {(r[0], r[1]): i for i, r in enumerate(grid) if len(r) >= 2}
+                for r in rows:
+                    vals = [r[k] for k in DAILY_FIELDS]
+                    i = where.get((r["date"], r["inbox"]))
+                    if i is None:
+                        grid.append(vals)
+                    else:
+                        grid[i] = vals
+                self.svc.values().update(spreadsheetId=sid, range=f"'{tab}'!A1", valueInputOption="RAW",
+                                         body={"values": grid}).execute()
                 return None
             grid = self.svc.values().get(spreadsheetId=sid, range=f"'{tab}'!A1:ZZ200").execute().get("values", [])
             if not grid:
