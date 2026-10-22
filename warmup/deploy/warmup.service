@@ -1,0 +1,7 @@
+[Unit]
+Description=Trilles AI inbox warm-up tick
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/warmup
+ExecStart=/opt/warmup/.venv/bin/python -m warmup tick --live

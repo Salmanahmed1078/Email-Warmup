@@ -1,0 +1,4 @@
+# Weekdays, every 5 minutes, 08:00-21:55 US Eastern. Each tick is idempotent and locked.
+# Install with: crontab -e   (adjust the path; CRON_TZ is supported by cronie/Debian cron)
+CRON_TZ=America/New_York
+*/5 8-21 * * 1-5 cd /opt/warmup && .venv/bin/python -m warmup tick --live >> data/cron.log 2>&1

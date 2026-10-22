@@ -1,0 +1,54 @@
+# Warm-up configuration. No secrets in this file.
+
+timezone: America/New_York          # Trilles AI, St. Petersburg FL
+start_date: 2026-10-22              # Week 1 day 1. A later date shifts every week by the same number of days.
+weekdays_only: true
+working_hours: {start: "09:00", end: "17:00"}
+
+# Per inbox, per day: [min, max] emails (new sends + replies).
+calendar:
+  - {week: 1, range: [5, 10]}
+  - {week: 2, range: [10, 15]}
+  - {week: 3, range: [15, 25]}
+  - {week: 4, range: [25, 35]}       # Week 4 and later
+
+hard_daily_cap: 35                  # Never exceeded per inbox per day, whatever the calendar says.
+gap_minutes: [5, 15]                # Gap between consecutive sends inside a sending burst.
+reply_delay_minutes: [20, 240]
+no_repeat_days: 14                  # Same subject never sent twice by the same inbox in this window.
+bounce_pause_threshold: 0.02        # Bounce rate (last 7 days) above this pauses the inbox...
+pause_days: 7                       # ...for this many days.
+lookback_days: 2                    # How far back to look for incoming warm-up mail / bounces.
+
+address: "7901 4th St N, Ste 300\nSt. Petersburg, FL 33702"
+company: Trilles AI
+
+inboxes:
+  awais:
+    email: awais@trilles-ai.com
+    full_name: "Awais"              # TODO: full name
+    title: "Co-Founder"             # TODO: confirm title
+  salman:
+    email: salman@trilles-ai.com
+    full_name: "Salman Ahmed"       # TODO: confirm
+    title: "Co-Founder"             # TODO: confirm title
+  kinza:
+    email: kinza@trilles-ai.com
+    full_name: "Kinza"              # TODO: full name
+    title: "Operations Lead"        # TODO: confirm title
+
+paths:
+  secrets_dir: secrets
+  data_dir: data
+
+# Optional Google Sheets logging ("Daily Scoreboard").
+sheets:
+  enabled: false
+  spreadsheet_id: ""                # the long ID from the sheet URL
+  token_inbox: salman               # whose OAuth token also carries the Sheets scope
+  tab: "Daily Scoreboard"
+  # mode "append": appends one row per inbox per day: date, inbox, sent, replied, rescued, problems
+  # mode "row": finds the row whose column A is row_label and the column whose row-1 header is today's date,
+  #             and writes "S x / R y / Sp z / P n" (all inboxes combined) into that cell.
+  mode: row
+  row_label: "warm-up"
