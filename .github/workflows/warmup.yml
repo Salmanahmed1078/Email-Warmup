@@ -6,6 +6,10 @@ on:
   schedule:
     - cron: "*/5 12-23 * * 1-5"
   workflow_dispatch:
+    inputs:
+      window:
+        description: "Also wait for and send actions due in the next N minutes (0-50)"
+        default: "0"
 
 concurrency:
   group: warmup
@@ -17,7 +21,7 @@ permissions:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 60
     defaults:
       run:
         working-directory: warmup
@@ -55,7 +59,11 @@ jobs:
           python -m warmup check --connect | grep -E '^(gmail|sheets)' || true
           # Full output (subjects etc.) stays in the encrypted state; the public log shows counts only.
           set +e
-          python -m warmup tick $LIVE > data/last_run.log 2>&1
+          WINDOW="${{ github.event.inputs.window || '0' }}"
+          case "$WINDOW" in ''|*[!0-9]*) WINDOW=0;; esac
+          [ "$WINDOW" -gt 50 ] && WINDOW=50
+          echo "window: ${WINDOW} min"
+          python -m warmup tick $LIVE --window "$WINDOW" > data/last_run.log 2>&1
           code=$?
           set -e
           cat data/last_run.log >> data/run_history.log
