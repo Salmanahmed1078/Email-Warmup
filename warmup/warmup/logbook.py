@@ -47,10 +47,11 @@ class SheetsSink:
         from googleapiclient.discovery import build
 
         self.cfg = cfg.raw["sheets"]
-        self.svc = build("sheets", "v4", credentials=creds, cache_discovery=False).spreadsheets()
+        self._new = lambda: build("sheets", "v4", credentials=creds, cache_discovery=False).spreadsheets()
 
     def push(self, day: dt.date, rows: list[dict]) -> str | None:
         try:
+            self.svc = self._new()  # fresh connection: pushes can come after long idle waits
             sid, tab = self.cfg["spreadsheet_id"], self.cfg["tab"]
             if self.cfg.get("mode", "upsert") == "upsert":
                 rng = f"'{tab}'!A1:F2000"
