@@ -169,6 +169,9 @@ def cmd_check(cfg, args) -> int:
                 status = "ok"
             except Exception as exc:  # noqa: BLE001
                 status = f"FAILED ({type(exc).__name__})"
+                resp = getattr(exc, "resp", None)
+                if resp is not None:  # Google's reason text, e.g. "API not enabled" / "caller lacks permission"
+                    status += f" HTTP {resp.status}: {str(getattr(exc, 'reason', ''))[:160]}"
             ok = ok and status == "ok"
             print(f"sheets: {status}")
     today = dt.datetime.now(cfg.tz).date()

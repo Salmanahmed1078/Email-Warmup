@@ -38,7 +38,7 @@ inboxes:
     title: "Growth Engineer"
 
 # GitHub Actions only sends for real when this is true (the CLI itself always needs --live).
-github_actions_live: false
+github_actions_live: true
 
 paths:
   secrets_dir: secrets
