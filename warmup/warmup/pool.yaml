@@ -1,0 +1,509 @@
+# Plain-text work email pool. Placeholders are filled at send time:
+#   {first} recipient first name   {firm} a prospect firm   {day} a weekday
+#   {time} a time of day           {tool} a software tool    {n} a small number
+# Optional per template: weekdays: [0-6] (Mon=0) limits which days it can be sent.
+# Rules: no links, no attachments, no images, no "test" subjects, 3-5 sentences per body.
+
+fills:
+  firm: [Harbor & Lane Partners, Crestview Advisory, Northgate Legal, Bayside Accounting Group, Palmetto Wealth,
+         Redwood Claims Services, Sunline Logistics, Keystone Dental Partners, Bluewater Insurance Agency,
+         Oakridge Property Management, Meridian Tax Advisors, Gulfstream Realty, Summit Ridge Consulting,
+         Brightwater Clinics, Ironbridge Construction, Coastal Benefits Group, Lakeshore Law Office,
+         Pinecrest Financial, Tidewater Engineering, Westbrook Staffing, Silver Oak Capital, Cypress Point Medical,
+         Granite Peak Builders, Seabreeze Hospitality, Hillcrest Family Law, Riverside Recovery Group]
+  day: [Monday, Tuesday, Wednesday, Thursday, Friday]
+  time: ["10:00", "10:30", "11:00", "11:30", "1:00", "1:30", "2:00", "2:30", "3:00", "3:30", "4:00"]
+  tool: [HubSpot, Notion, Airtable, Apollo, Clay, Slack, Loom, Google Sheets, Calendly, Zapier, Pipedrive, ClickUp]
+  n: ["two", "three", "four", "five", "six"]
+
+greetings: ["Hi {first},", "Hey {first},", "{first},", "Hi {first}, hope your day is going well.", "Morning {first},", "Hello {first},"]
+signoffs: ["Thanks,", "Best,", "Cheers,", "Thanks a lot,", "Talk soon,", "Appreciate it,"]
+reply_signoffs: ["Thanks,", "Best,", "Cheers,", "Talk soon,"]
+
+templates:
+  - id: tracker-weekly
+    subjects: ["Tracker update for {firm}", "{firm} row in the tracker", "Quick tracker note on {firm}"]
+    body: >-
+      I updated the {firm} row in the tracker this morning. Their decision maker changed last month, so I swapped
+      the contact and added a note about the new team structure. Can you double check the stage before our {day}
+      review? I left the old contact in the notes column in case we need it.
+    replies:
+      - "Looked at it just now and the stage is right. Good catch on the new contact."
+      - "Thanks for updating that. I will review it properly before {day} and flag anything odd."
+      - "Checked it, all good. I also added the date of our last touchpoint so we have it in one place."
+      - "Perfect, that saves me a step. I will move it to the next stage after the review."
+
+  - id: tracker-cleanup
+    subjects: ["Cleaning up duplicate rows", "Duplicates in the pipeline sheet", "Tracker cleanup before {day}"]
+    body: >-
+      I found {n} duplicate rows in the pipeline tracker while sorting by firm name. Most of them came from the
+      import we did last week. I merged the notes into the newer rows and deleted the old ones. Let me know if you
+      see anything missing on your side.
+    replies:
+      - "Nothing missing from what I can see. Thanks for cleaning that up."
+      - "Thanks, that import was messy. I will keep an eye out for any more duplicates."
+      - "Looks good to me. Can we add a quick check for duplicates before the next import?"
+
+  - id: tracker-stages
+    subjects: ["Stage definitions in the tracker", "Proposal for tracker stages", "Simplifying our pipeline stages"]
+    body: >-
+      I think we have too many stages in the tracker and people are using them differently. My suggestion is to cut
+      it down to five stages and write one line on what each one means. I can draft the definitions today if you
+      agree. Then we can walk through them in the {day} sync.
+    replies:
+      - "Agreed, five is plenty. Go ahead and draft them and I will add comments."
+      - "Good idea. The difference between contacted and engaged has been confusing for a while."
+      - "Makes sense to me. Happy to go through them on {day}."
+      - "Yes please. I would keep a separate stage for paused deals, but otherwise I am with you."
+
+  - id: tracker-owner
+    subjects: ["Owner column on the tracker", "Assigning owners to open rows", "Who owns the {firm} follow-up?"]
+    body: >-
+      A few rows in the tracker still have no owner, including {firm}. I can take {firm} if you are busy this week.
+      Could you assign the rest by end of day {day}? It will make the weekly report much easier to put together.
+    replies:
+      - "Please take {firm}, thanks. I will assign the others this afternoon."
+      - "I can do it by {day}. Thanks for the reminder."
+      - "Done for most of them. Two are still unclear, I will ask in the sync."
+
+  - id: tracker-report
+    subjects: ["Weekly numbers from the tracker", "This week's pipeline summary", "Pipeline summary draft"]
+    body: >-
+      I pulled the weekly numbers from the tracker. We added {n} new firms and moved two into the proposal stage.
+      Response rate is a little lower than last week, but the sample is small. I will put the summary in the team
+      folder once you have had a look.
+    replies:
+      - "Numbers look fine to me. Agree the sample is too small to read much into it."
+      - "Thanks for pulling these. Can you add the comparison to last month as well?"
+      - "Looks good, go ahead and share it."
+      - "Nice work. Let us talk about the lower response rate on {day}."
+
+  - id: call-prep-firm
+    subjects: ["Prep for the {firm} call", "Notes before {firm} on {day}", "{firm} call prep"]
+    body: >-
+      Our call with {firm} is on {day} at {time}. I put together a short brief with their team size, current
+      tools, and the questions we want to ask. The main thing to find out is who handles their intake process today.
+      Could you read it before the call and add anything I missed?
+    replies:
+      - "Read it, looks thorough. I added one question about their budget cycle."
+      - "Thanks for the brief. I will read it tonight and add notes."
+      - "Great prep. I will lead the intro and hand over to you for the questions."
+      - "Looks good. Do we know if anyone else from their side is joining?"
+
+  - id: call-prep-agenda
+    subjects: ["Agenda for the {day} call", "Draft agenda for {day}", "Call agenda, {day} {time}"]
+    body: >-
+      Here is a rough agenda for {day}. Five minutes on introductions, fifteen on their current process, and ten on
+      next steps. I would rather keep the demo short and spend more time listening. Does that split work for you?
+    replies:
+      - "That split works. Agree on keeping the demo short."
+      - "Good plan. Maybe leave five extra minutes at the end for questions."
+      - "Works for me. I will keep an eye on the time."
+
+  - id: call-prep-questions
+    subjects: ["Discovery questions for {firm}", "Questions list for the {firm} meeting", "What we want to learn from {firm}"]
+    body: >-
+      I drafted {n} discovery questions for the {firm} meeting. They focus on how they track new clients and where
+      things get stuck today. I tried to keep them open so they do most of the talking. Let me know which ones you
+      would cut.
+    replies:
+      - "I would cut the last one, it feels a bit too direct for a first call."
+      - "These are good. Keep them all and we will see how much time we have."
+      - "Nice list. I would move the question about their current tools to the start."
+      - "Looks solid. I will print them out so we can tick them off during the call."
+
+  - id: call-followup
+    subjects: ["Follow-up notes from {firm}", "Recap of the {firm} call", "{firm} call recap"]
+    body: >-
+      Good call with {firm} today. They are interested but want to see how it fits with their current setup first.
+      I promised to send a short summary and a few time options for a second meeting. I will draft the summary
+      tomorrow morning unless you want to take it.
+    replies:
+      - "Thanks, please go ahead with the summary. I can join any of the time options."
+      - "Agreed, it went well. I will send you my notes so you can add them in."
+      - "Happy for you to take it. Let me know when the draft is ready and I will read it."
+
+  - id: call-reschedule
+    subjects: ["Moving our {day} call", "Can we shift {day} to later?", "Small change for {day}"]
+    body: >-
+      Something came up on my side for {day} morning. Could we move our call to {time} instead? If that does not
+      work, I am free most of the following day as well. Sorry for the shuffle.
+    replies:
+      - "{time} works fine. I will update the invite."
+      - "No problem at all. The following day is better for me if that is still open."
+      - "Sure, {time} is good. Talk then."
+      - "All good, just send me the new time and I will make it work."
+
+  - id: meeting-time
+    subjects: ["Time for a quick sync this week", "Finding 30 minutes this week", "Short sync on {day}?"]
+    body: >-
+      Can we find thirty minutes this week to go over the open items? I am free on {day} at {time} or later in the
+      afternoon. It should not take long, I mostly want to agree on priorities for next week.
+    replies:
+      - "{day} at {time} works. I will send an invite."
+      - "Later in the afternoon is better for me, maybe an hour after that?"
+      - "Sure, I am free then. I will bring my list too."
+
+  - id: meeting-recurring
+    subjects: ["Making our sync recurring", "Weekly check-in slot", "Recurring {day} check-in"]
+    body: >-
+      We keep scheduling our check-in from scratch every week. Would it be easier to set a recurring slot on {day}
+      at {time}? We can always cancel if there is nothing to discuss. Let me know and I will set it up.
+    replies:
+      - "Yes, that would help a lot. {day} at {time} is fine."
+      - "Good idea. Could we do it a bit later in the day though?"
+      - "Please set it up. I will add a running agenda to the invite."
+
+  - id: meeting-notes
+    subjects: ["Notes from this morning", "Meeting notes and action items", "Action items from today"]
+    body: >-
+      I wrote up the notes from this morning and listed the action items at the top. You have the two items about
+      the outreach list and the call schedule. I put rough dates next to each one, but feel free to change them.
+      Let me know if I got anything wrong.
+    replies:
+      - "Thanks for writing these up. The dates look fine to me."
+      - "All correct. I already started on the outreach list."
+      - "Looks right. I might need an extra day for the call schedule."
+      - "Great notes. Nothing to add from my side."
+
+  - id: meeting-room
+    subjects: ["Room for {day}", "Where are we meeting {day}?", "Location for {day} at {time}"]
+    body: >-
+      Do you want to meet in person on {day} or keep it on video? I am fine either way. If we meet in person, the
+      small room is free from {time} for an hour. Let me know what you prefer.
+    replies:
+      - "In person would be nice for a change. The small room works."
+      - "Video is easier for me that day, if that is ok."
+      - "Either is fine. Let us do the small room."
+
+  - id: research-firm
+    subjects: ["Research on {firm}", "Background on {firm}", "What I found on {firm}"]
+    body: >-
+      I spent some time looking into {firm}. They have grown quite a bit over the last two years and opened a second
+      office recently. From what I can tell, they still handle most of their intake manually. I think they are a
+      good fit for us, but I would like your opinion before we reach out.
+    replies:
+      - "Sounds like a strong fit. Go ahead and add them to the list."
+      - "Interesting. Do we know who runs operations there?"
+      - "Thanks for digging into this. I agree, let us reach out next week."
+      - "Good research. I would wait until after their busy season though."
+
+  - id: research-list
+    subjects: ["Shortlist of firms for next week", "{n} firms to look at", "Next batch of firms"]
+    body: >-
+      I put together a shortlist of {n} firms for next week, including {firm}. They are all in the same size range
+      and none of them seem to use a dedicated intake tool. Could you take a quick look and remove any we have
+      already spoken to? I want to avoid contacting the same people twice.
+    replies:
+      - "I removed one we spoke to in the summer. The rest look new."
+      - "Checked them, none are in our history. Good list."
+      - "Thanks. {firm} looks especially promising."
+
+  - id: research-competitor
+    subjects: ["How {firm} handles intake", "Interesting setup at {firm}", "Notes on {firm}'s process"]
+    body: >-
+      I was reading through some public information on {firm} and noticed they changed how they handle new clients.
+      It looks like they split intake between two people now. That could be a good opening for a conversation. I
+      wrote a short note in the tracker.
+    replies:
+      - "Good spot. That does sound like a pain point we could help with."
+      - "Thanks for noting it. I will read the tracker note before we reach out."
+      - "Interesting. Let us mention it carefully, we do not want to sound like we are watching them."
+
+  - id: research-industry
+    subjects: ["Pattern in the firms we spoke to", "Something I noticed in our calls", "Common thread across calls"]
+    body: >-
+      Looking back at the last few calls, almost every firm mentioned that follow-ups slip when things get busy. It
+      came up with {firm} as well. I think we should lead with that in our next conversations. What do you think?
+    replies:
+      - "Agreed, it comes up every time. Let us lead with it."
+      - "Good observation. I would still ask about it rather than assume."
+      - "Yes, I noticed the same thing. We should write it into the call guide."
+      - "Makes sense. Let us try it on the next two calls and compare."
+
+  - id: research-size
+    subjects: ["Team size question on {firm}", "How big is {firm}?", "Headcount at {firm}"]
+    body: >-
+      Do you know roughly how many people work at {firm}? Their profile says one number but it seems out of date. It
+      matters because it changes which plan we would suggest. If you are not sure, I can ask during the call.
+    replies:
+      - "I think they are around twenty people now, but asking on the call is safer."
+      - "Not sure, let us just ask them directly."
+      - "Last I heard it was a small team, under fifteen."
+
+  - id: tools-crm
+    subjects: ["Thoughts on {tool}", "Should we try {tool}?", "{tool} for the team"]
+    body: >-
+      I have been reading about {tool} and I think it could save us some time on the weekly reporting. It is not
+      expensive and they have a free trial. Would you be open to trying it for two weeks? I can set it up so it does
+      not interfere with what we already use.
+    replies:
+      - "Happy to try it. Two weeks sounds about right."
+      - "Let us try it, but I would like to see how it fits with the tracker first."
+      - "Sure. Can you set up a short walkthrough once it is ready?"
+      - "Worth a try. Let us agree on what success looks like before we start."
+
+  - id: tools-access
+    subjects: ["Access to {tool}", "Login for {tool}", "Adding you to {tool}"]
+    body: >-
+      I added you to {tool} this morning. You should get an invite from them shortly. Let me know if it does not
+      show up and I will resend it. The main workspace is already set up with our current list.
+    replies:
+      - "Got the invite, thanks. I am in."
+      - "Nothing yet, I will check again in an hour and let you know."
+      - "Thanks, I will have a look around this afternoon."
+
+  - id: tools-workflow
+    subjects: ["Small change to our {tool} workflow", "Tweaking how we use {tool}", "{tool} workflow idea"]
+    body: >-
+      I changed one step in how we use {tool}. New entries now go into a review column first instead of straight into
+      the main list. It should cut down on mistakes. Let me know if it gets in your way and we can change it back.
+    replies:
+      - "Good change. I will use the review column from now on."
+      - "Makes sense. Just ping me when something is waiting for review."
+      - "Fine by me. Let us see how it goes this week."
+
+  - id: tools-cost
+    subjects: ["Reviewing our tool subscriptions", "Tool costs this month", "Subscriptions check"]
+    body: >-
+      I went through our tool subscriptions and we are paying for {n} things we barely use. I would like to cancel at
+      least two of them before the next billing date. I will send you the list so you can confirm nothing important
+      depends on them.
+    replies:
+      - "Good idea. Send the list over and I will check it today."
+      - "Agreed. I think we stopped using one of them months ago."
+      - "Thanks for doing this. Happy for you to cancel whatever we do not need."
+      - "Please keep {tool}, I still use it every week. Otherwise go ahead."
+
+  - id: tools-template
+    subjects: ["New template in {tool}", "Template for call notes", "Shared notes template"]
+    body: >-
+      I made a simple template for call notes in {tool}. It has sections for context, questions, answers, and next
+      steps. If we all use it, the notes will be much easier to search later. Could you try it on your next call?
+    replies:
+      - "Will do. It looks clean."
+      - "Nice. I will use it on {day}."
+      - "Good idea. I would add a short section for objections."
+
+  - id: tools-integration
+    subjects: ["Connecting {tool} to the tracker", "{tool} and the tracker", "Syncing {tool} with our sheet"]
+    body: >-
+      I am looking at connecting {tool} to the tracker so we stop copying things by hand. It looks doable in an
+      afternoon. Before I start, is there any field in the tracker you would not want overwritten automatically?
+    replies:
+      - "Please do not touch the notes column. Everything else is fine."
+      - "That would save us a lot of time. Go for it."
+      - "Let me think about it and get back to you tomorrow."
+      - "The owner column should stay manual. The rest can sync."
+
+  - id: ops-invoice
+    subjects: ["Invoice question", "Quick billing question", "Billing reminder for this month"]
+    body: >-
+      Do you know if the invoice for last month went out? I cannot find it in the shared folder. If it has not been
+      sent yet, I can prepare it today. Just let me know so we do not send it twice.
+    replies:
+      - "It has not gone out yet. Please go ahead, thanks."
+      - "I sent it on Friday, I will move a copy into the shared folder."
+      - "Let me check and get back to you within the hour."
+
+  - id: ops-folder
+    subjects: ["Reorganizing the shared folder", "Shared folder structure", "Folder cleanup"]
+    body: >-
+      The shared folder is getting hard to navigate. I want to group things by client and move old files into an
+      archive folder. I will not delete anything. Is it ok if I do this on {day}?
+    replies:
+      - "Yes please, it really needs it."
+      - "{day} is fine. Just let us know once it is done so we can find things."
+      - "Good idea. Keep the templates folder at the top level if possible."
+
+  - id: ops-onboarding
+    subjects: ["Onboarding checklist", "Checklist for new clients", "Draft onboarding steps"]
+    body: >-
+      I wrote a short checklist for onboarding new clients. It covers the kickoff call, access requests, and the
+      first weekly update. It is only {n} steps for now, but we can add more as we go. Would you take a look this
+      week?
+    replies:
+      - "Looks good. I would add a step to confirm their main contact."
+      - "Thanks, I will read it on {day}."
+      - "Nice and simple. Let us use it with the next client."
+      - "Great start. Keep it short, that is the best part."
+
+  - id: ops-handover
+    subjects: ["Covering for me on {day}", "Out on {day} afternoon", "Handover for {day}"]
+    body: >-
+      I will be out on {day} afternoon. There is one follow-up due with {firm} that day. Could you send it if I do
+      not get to it in the morning? The draft is in the tracker notes.
+    replies:
+      - "Sure, I will keep an eye on it."
+      - "No problem. I will check the tracker around noon."
+      - "Got it, I will send it if it is still open."
+
+  - id: ops-priorities
+    subjects: ["Priorities for next week", "Next week's focus", "What should we focus on next week?"]
+    body: >-
+      I want to agree on two or three priorities for next week before we get busy. My suggestion is the {firm}
+      follow-up, the tracker cleanup, and preparing for the {day} calls. What would you add or remove?
+    replies:
+      - "That list looks right. I would add the onboarding checklist."
+      - "Agreed on all three."
+      - "I would swap the tracker cleanup for more outreach, but happy either way."
+      - "Good list. Let us confirm it in our sync."
+
+  - id: ops-feedback
+    subjects: ["Feedback on the proposal draft", "Comments on the proposal", "Proposal draft for {firm}"]
+    body: >-
+      I read through the proposal draft for {firm}. Overall it is clear, but the pricing section feels a bit long.
+      I would cut it to a short table and move the details to the end. Happy to make the edit if you agree.
+    replies:
+      - "Agreed, go ahead and shorten it."
+      - "Thanks for reading it. I will make the change tonight."
+      - "Good point. Keep the table simple, three rows at most."
+
+  - id: ops-numbers
+    subjects: ["Month to date numbers", "Quick numbers check", "Numbers for the monthly review"]
+    body: >-
+      I am pulling the month to date numbers for the review. Could you send me your call count and any meetings
+      booked so far? I will put everything into one sheet by {day}.
+    replies:
+      - "Sending them this afternoon."
+      - "I had {n} calls so far and one meeting booked. More details later today."
+      - "Will do. Is end of day ok?"
+
+  - id: outreach-copy
+    subjects: ["Feedback on our intro message", "Rewriting the intro message", "Shorter intro message"]
+    body: >-
+      I think our intro message is too long. I tried a shorter version that is only three sentences and asks one
+      clear question. I would like to try it on the next batch of firms. Would you read it and tell me if it sounds
+      natural?
+    replies:
+      - "It reads well. Shorter is better here."
+      - "I like it. Maybe soften the question at the end a little."
+      - "Sounds natural to me. Let us try it on the next batch."
+      - "Good rewrite. I would mention the specific problem in the first line."
+
+  - id: outreach-timing
+    subjects: ["Best time to reach out", "Timing for outreach", "When do firms reply?"]
+    body: >-
+      I looked at when we usually get replies and most come in mid morning. It might make sense to schedule our
+      outreach a bit earlier in the day. It is a small change but worth testing. What do you think?
+    replies:
+      - "Worth testing. Let us try it for two weeks."
+      - "Makes sense. Mondays are always slow anyway."
+      - "Good find. I will adjust my schedule."
+
+  - id: outreach-followup
+    subjects: ["Second follow-up for {firm}", "Following up with {firm}", "{firm} has gone quiet"]
+    body: >-
+      We have not heard back from {firm} since the first call. I would like to send a short second follow-up on {day}.
+      Nothing pushy, just a reminder and an easy way to say no. Are you ok with that?
+    replies:
+      - "Yes, go ahead. An easy no is better than silence."
+      - "Fine by me. Maybe wait until after {day} so it does not feel rushed."
+      - "Agreed. Keep it to two sentences."
+      - "Sure, send it. They seemed interested on the call."
+
+  - id: outreach-referral
+    subjects: ["Possible referral from {firm}", "Intro through {firm}", "Referral idea"]
+    body: >-
+      Our contact at {firm} mentioned they know a few other firms with the same problem. I would like to ask if they
+      would be open to an introduction. Would it be better to ask by phone or by email? I do not want to put them on
+      the spot.
+    replies:
+      - "Phone feels more personal for this. Maybe at the end of the next check-in."
+      - "Email is fine, it gives them time to think about it."
+      - "Good idea. Let us ask after they have seen some results."
+
+  - id: product-feedback
+    subjects: ["Feature request from {firm}", "Something {firm} asked for", "Customer request to discuss"]
+    body: >-
+      {firm} asked whether we can send a weekly summary to their team automatically. It came up twice on the call so
+      it seems important to them. I said we would look into it. Can we talk about it on {day}?
+    replies:
+      - "Yes, add it to the agenda. It should not be too hard."
+      - "Interesting, another firm asked something similar."
+      - "Sure. Let us find out how often they actually want it first."
+      - "Good to know. I will think about it before {day}."
+
+  - id: product-demo
+    subjects: ["Updating the demo", "Demo walkthrough changes", "Shorter demo flow"]
+    body: >-
+      I think our demo spends too long on setup. I would like to start with the end result and then show how we got
+      there. I can put together a new version by {day}. Would you be my practice audience?
+    replies:
+      - "Happy to. Let me know when you are ready."
+      - "Good idea, people care most about the result."
+      - "Sure, {day} afternoon works for a run through."
+
+  - id: product-docs
+    subjects: ["Writing a short FAQ", "FAQ for clients", "Common questions doc"]
+    body: >-
+      We keep answering the same {n} questions on calls. I started a short FAQ that we can send after the first
+      meeting. It is still rough, but the answers are there. Could you add anything you hear often?
+    replies:
+      - "I will add the question about data access, it comes up a lot."
+      - "Great idea. I will add a couple tonight."
+      - "Nice. Keep the answers short and friendly."
+
+  - id: hiring-intern
+    subjects: ["Interview schedule for {day}", "Candidate interviews {day}", "Interviews this week"]
+    body: >-
+      We have two candidate interviews on {day}, the first one at {time}. I shared their notes in the hiring folder.
+      Could you join the second one? It should take about thirty minutes.
+    replies:
+      - "Yes, I can join the second one."
+      - "I will be there. I will read the notes beforehand."
+      - "I might be a few minutes late, but I will join."
+
+  - id: hiring-feedback
+    subjects: ["Feedback on today's candidate", "Thoughts after the interview", "Interview notes"]
+    body: >-
+      What did you think of the candidate today? I liked how they explained their last project, but I am not sure
+      about their experience with clients. I would like to decide by {day}. Let me know your view when you have a
+      moment.
+    replies:
+      - "I liked them too. Agree that client experience is the question."
+      - "I was impressed. I think they would learn quickly."
+      - "Mixed feelings. Can we talk about it on {day}?"
+      - "Strong on the technical side. I would do one more short call."
+
+  - id: team-lunch
+    subjects: ["Team lunch on {day}?", "Lunch plans {day}", "Getting lunch {day}"]
+    body: >-
+      It has been a while since we all had lunch together. Would {day} work for you? I was thinking somewhere close
+      to the office around noon. Let me know and I will book a table.
+    replies:
+      - "{day} works for me. Sounds great."
+      - "I am in. Anywhere is fine."
+      - "Could we do the day after? {day} is a bit full."
+
+  - id: admin-calendar
+    subjects: ["Shared calendar update", "Blocking focus time", "Calendar change for next week"]
+    body: >-
+      I blocked some focus time on the shared calendar for next week, mostly mornings. I will still be reachable on
+      chat if something urgent comes up. Let me know if any of those blocks clash with calls you are planning.
+    replies:
+      - "No clashes on my side. Good idea, I might do the same."
+      - "One small clash on {day}, I will move my call."
+      - "Thanks for the heads up. Looks fine."
+
+  - id: admin-weekly-wrap
+    weekdays: [3, 4]               # Thursday/Friday only
+    subjects: ["Wrapping up the week", "End of week wrap", "Quick wrap for the week"]
+    body: >-
+      Quick wrap for the week from my side. The tracker is up to date and the {firm} follow-up went out. Next week I
+      will focus on the new shortlist and the demo changes. Anything you need from me before Monday?
+    replies:
+      - "Nothing from me. Have a good weekend."
+      - "All good, thanks for the update."
+      - "Just the call notes from {firm} when you have a minute."
+      - "Great week. Talk on Monday."
+
+  - id: admin-training
+    subjects: ["Short session on {tool}", "Learning session idea", "{tool} tips session"]
+    body: >-
+      A few of us are not using {tool} to its full potential. I could run a short session on {day} to share the
+      shortcuts I use every day. It would take about twenty minutes. Would you find that useful?
+    replies:
+      - "Yes, definitely. I only use the basics."
+      - "Sounds useful. {day} works."
+      - "Sure, record it if you can so others can watch later."

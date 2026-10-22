@@ -1,0 +1,9 @@
+[Unit]
+Description=Run the warm-up tick every 5 minutes on weekdays
+
+[Timer]
+OnCalendar=Mon..Fri *-*-* 08..21:00/5:00 America/New_York
+Persistent=false
+
+[Install]
+WantedBy=timers.target

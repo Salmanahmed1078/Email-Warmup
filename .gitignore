@@ -1,0 +1,15 @@
+# Secrets: OAuth client files and tokens. Never commit.
+warmup/secrets/*
+secrets/*
+!warmup/secrets/README.md
+*.token.json
+token_*.json
+client_secret*.json
+.env
+
+# Runtime state and logs
+warmup/data/
+__pycache__/
+*.pyc
+.venv/
+.pytest_cache/
