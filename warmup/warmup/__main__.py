@@ -149,6 +149,28 @@ def cmd_check(cfg, args) -> int:
         print(f"{key:>7} {inbox.email:<26} token: {'present' if has else 'MISSING'}  signature: {inbox.full_name} / {inbox.title}")
     client = (cfg.secrets_dir / "client_secret.json").exists() or bool(gmail.os.environ.get("WARMUP_CLIENT_SECRET_JSON"))
     print(f"OAuth client file: {'present' if client else 'MISSING'}")
+    if args.connect:
+        for key, inbox in cfg.inboxes.items():
+            try:
+                c = gmail.GmailClient(cfg, inbox)
+                addr = c.svc.users().getProfile(userId="me").execute()["emailAddress"].lower()
+                status = "ok" if addr == inbox.email else f"WRONG ACCOUNT (token is for another address)"
+            except Exception as exc:  # noqa: BLE001
+                status = f"FAILED ({type(exc).__name__})"
+            ok = ok and status == "ok"
+            print(f"gmail {key:>7}: {status}")
+        sc = cfg.raw.get("sheets", {})
+        if sc.get("enabled"):
+            try:
+                from googleapiclient.discovery import build
+                creds = gmail.load_credentials(cfg, sc["token_inbox"])
+                build("sheets", "v4", credentials=creds, cache_discovery=False).spreadsheets().get(
+                    spreadsheetId=sc["spreadsheet_id"], fields="spreadsheetId").execute()
+                status = "ok"
+            except Exception as exc:  # noqa: BLE001
+                status = f"FAILED ({type(exc).__name__})"
+            ok = ok and status == "ok"
+            print(f"sheets: {status}")
     today = dt.datetime.now(cfg.tz).date()
     print(f"Today {today}: week {week_number(cfg, today)}, range {target_range(cfg, today)}")
     return 0 if ok else 1
@@ -190,7 +212,8 @@ def main(argv=None) -> int:
     a = sub.add_parser("auth", help="OAuth sign-in for one inbox (opens a browser)")
     a.add_argument("--inbox", required=True)
     a.add_argument("--port", type=int, default=0)
-    add("check", help="validate config, content pool and credentials")
+    ck = add("check", help="validate config, content pool and credentials")
+    ck.add_argument("--connect", action="store_true", help="also sign in to each inbox and the sheet")
     t = add("tick", help="do everything that is due now (run from cron every 5 minutes)")
     t.add_argument("--window", type=float, default=0, help="also wait for actions due in the next N minutes")
     add("run-day", help="long-running: keep ticking until the working day is done")

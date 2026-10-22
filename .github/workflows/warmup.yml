@@ -51,6 +51,8 @@ jobs:
         run: |
           LIVE=$(python -c "import yaml;print('--live' if yaml.safe_load(open('config.yaml')).get('github_actions_live') else '')")
           echo "mode: ${LIVE:-dry-run}"
+          # Connection check: prints only ok / error type per inbox and for the sheet.
+          python -m warmup check --connect | grep -E '^(gmail|sheets)' || true
           # Full output (subjects etc.) stays in the encrypted state; the public log shows counts only.
           set +e
           python -m warmup tick $LIVE > data/last_run.log 2>&1
