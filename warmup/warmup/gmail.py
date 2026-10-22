@@ -133,22 +133,40 @@ class GmailClient:
         from googleapiclient.discovery import build
 
         self.inbox = inbox
-        self.svc = build("gmail", "v1", credentials=load_credentials(cfg, inbox.key), cache_discovery=False)
+        self._creds = load_credentials(cfg, inbox.key)
+        self._build = lambda: build("gmail", "v1", credentials=self._creds, cache_discovery=False)
+        self.svc = self._build()
+
+    def _run(self, make, attempts: int = 3):
+        """Execute a request; on a dropped connection (e.g. SSLEOFError after a long idle wait),
+        rebuild the client with a fresh connection and retry."""
+        import time as _time
+
+        import httplib2
+
+        for i in range(attempts):
+            try:
+                return make(self.svc).execute()
+            except (OSError, httplib2.HttpLib2Error):
+                if i == attempts - 1:
+                    raise
+                _time.sleep(2 * (i + 1))
+                self.svc = self._build()
 
     def _ids(self, q: str, spam: bool = False) -> list[str]:
         out, token = [], None
         while True:
-            r = self.svc.users().messages().list(userId="me", q=q, includeSpamTrash=spam,
-                                                 pageToken=token, maxResults=100).execute()
+            r = self._run(lambda svc: svc.users().messages().list(
+                userId="me", q=q, includeSpamTrash=spam, pageToken=token, maxResults=100))
             out += [m["id"] for m in r.get("messages", [])]
             token = r.get("nextPageToken")
             if not token:
                 return out
 
     def _meta(self, mid: str) -> Msg:
-        r = self.svc.users().messages().get(
+        r = self._run(lambda svc: svc.users().messages().get(
             userId="me", id=mid, format="metadata",
-            metadataHeaders=["From", "To", "Subject", "Message-ID"]).execute()
+            metadataHeaders=["From", "To", "Subject", "Message-ID"]))
         h = {x["name"].lower(): x["value"] for x in r["payload"].get("headers", [])}
         return Msg(
             id=r["id"], thread_id=r["threadId"],
@@ -175,8 +193,8 @@ class GmailClient:
     def rescue(self, msg: Msg) -> None:
         """'Not spam' + move to Inbox (and out of Promotions into Primary)."""
         remove = [l for l in ("SPAM", "CATEGORY_PROMOTIONS") if l in msg.labels]
-        self.svc.users().messages().modify(userId="me", id=msg.id, body={
-            "addLabelIds": ["INBOX", "CATEGORY_PERSONAL"], "removeLabelIds": remove}).execute()
+        self._run(lambda svc: svc.users().messages().modify(userId="me", id=msg.id, body={
+            "addLabelIds": ["INBOX", "CATEGORY_PERSONAL"], "removeLabelIds": remove}))
 
     def send(self, recipient: Inbox, subject: str, body: str, thread_id: str | None = None,
              in_reply_to: str | None = None) -> tuple[str, str]:
@@ -184,7 +202,7 @@ class GmailClient:
         payload = {"raw": base64.urlsafe_b64encode(mime.as_bytes()).decode()}
         if thread_id:
             payload["threadId"] = thread_id
-        r = self.svc.users().messages().send(userId="me", body=payload).execute()
+        r = self._run(lambda svc: svc.users().messages().send(userId="me", body=payload))
         return r["id"], r["threadId"]
 
 
