@@ -9,8 +9,8 @@ working_hours: {start: "09:00", end: "17:00"}
 calendar:
   - {week: 1, range: [5, 10]}
   - {week: 2, range: [10, 15]}
-  - {week: 3, range: [15, 25]}
-  - {week: 4, range: [25, 35]}       # Week 4 and later
+  - {week: 3, range: [20, 30]}
+  - {week: 4, range: [30, 35]}       # Week 4 and later
 
 hard_daily_cap: 35                  # Never exceeded per inbox per day, whatever the calendar says.
 gap_minutes: [5, 15]                # Gap between consecutive sends inside a sending burst.
