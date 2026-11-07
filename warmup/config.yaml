@@ -37,6 +37,13 @@ inboxes:
     full_name: "Kinza"
     title: "Growth Engineer"
 
+# Outside recipients (send-only seeds). Each inbox sends this share of its NEW emails to them instead of to
+# another warm-up inbox. Replies are done by hand; the tool never logs in to these accounts.
+external_share: 0.15
+external_seeds:
+  - {name: salman_gmail, email: salmansalu1078@gmail.com, full_name: Salman}
+  - {name: awais_gmail, email: letsautomatewithawais@gmail.com, full_name: Awais}
+
 # GitHub Actions only sends for real when this is true (the CLI itself always needs --live).
 github_actions_live: true
 

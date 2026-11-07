@@ -39,6 +39,20 @@ class Config:
         except KeyError:
             raise AttributeError(name) from None
 
+    def recipient(self, key: str) -> Inbox:
+        """A warm-up inbox, or an outside send-only seed (key 'ext:<name>')."""
+        if key in self.inboxes:
+            return self.inboxes[key]
+        return self.seeds[key]
+
+    @property
+    def seeds(self) -> dict[str, Inbox]:
+        out = {}
+        for sd in self.raw.get("external_seeds") or []:
+            name = sd["name"]
+            out[f"ext:{name}"] = Inbox(f"ext:{name}", sd["email"], sd.get("full_name", name), "")
+        return out
+
     def work_start(self) -> dt.time:
         return dt.time.fromisoformat(self.raw["working_hours"]["start"])
 
