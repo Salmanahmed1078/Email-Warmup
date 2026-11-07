@@ -108,6 +108,8 @@ class Runner:
                 if m.id in seen:
                     continue
                 seen.append(m.id)
+                if not self._about_warmup(m):
+                    continue  # e.g. bounces from an outside deliverability test sent from this inbox
                 kind = "spam_report" if SPAM_REPORT.search(f"{m.subject} {m.snippet}") else "bounce"
                 self.s["bounces"].append({"inbox": key, "id": m.id, "at": self.now().isoformat(), "kind": kind})
                 new.append((key, kind))
@@ -127,6 +129,27 @@ class Runner:
         reason = "; ".join(f"{k}: {kind}" for k, kind in new)
         self.s["alert"] = {"at": self.now().isoformat(), "reason": reason}
         self._write_alert(reason)
+
+    def _about_warmup(self, m) -> bool:
+        """False only when the notice names other addresses and none of them is a warm-up address."""
+        found = {a.lower() for a in re.findall(r"[\w.+-]+@[\w-]+(?:\.[\w-]+)+", f"{m.subject} {m.snippet}")}
+        if not found:
+            return True  # can't tell: be safe and count it
+        mine = {i.email.lower() for i in self.cfg.inboxes.values()} | {i.email.lower() for i in self.cfg.seeds.values()}
+        return bool(found & mine)
+
+    def _apply_reset(self) -> None:
+        """One-off: config reset_alert_id clears a false alert and the pauses it caused (applied once)."""
+        rid = self.cfg.raw.get("reset_alert_id")
+        done = self.s.setdefault("resets", [])
+        if not rid or rid in done:
+            return
+        done.append(rid)
+        self.s["alert"] = None
+        self.s["paused"] = {}
+        since = self.cfg.raw.get("reset_bounces_since", "")
+        self.s["bounces"] = [b for b in self.s["bounces"] if b["at"][:10] < str(since)] if since else self.s["bounces"]
+        self.out(f"{self.tag}Reset applied: {rid} (alert and pauses cleared)")
 
     def _write_alert(self, reason: str) -> None:
         path = self.log.dir / "ALERT.txt"
@@ -282,6 +305,7 @@ class Runner:
         """Returns 2 on the run that raises a new alert (so cron/CI reports a failure once), else 0."""
         now = self.now()
         day = now.date()
+        self._apply_reset()
         if self.s["alert"]:
             self.out(f"{self.tag}STOPPED by alert ({self.s['alert']['reason']}). Run 'clear-alert' after checking.")
             return 0
