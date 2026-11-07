@@ -77,8 +77,11 @@ class Runner:
         for i, (sender_key, at) in enumerate(zip(senders, times)):
             sender = cfg.inboxes[sender_key]
             others = [k for k in cfg.inboxes if k != sender_key]
+            seeds = list(cfg.seeds)
+            if seeds and rng.random() < cfg.external_share:
+                others = seeds  # send-only outside recipient (replies are done by hand)
             others.sort(key=lambda k: (pair_count.get((sender_key, k), 0), rng.random()))
-            rcpt = cfg.inboxes[others[0]]
+            rcpt = cfg.recipient(others[0])
             pair_count[(sender_key, rcpt.key)] = pair_count.get((sender_key, rcpt.key), 0) + 1
             mine = [a for a in self.s["actions"] if a["inbox"] == sender_key and a["kind"] == "send"
                     and a["at"][:10] >= cutoff and a["status"] != "skipped"]
@@ -223,7 +226,7 @@ class Runner:
             return self._finish(a, "skipped", "inbox paused")
         if self._done_today(key, day) >= limit:
             return self._finish(a, "skipped", f"daily limit {limit} reached")
-        rcpt = cfg.inboxes[a["to"]]
+        rcpt = cfg.recipient(a["to"])
         try:
             gid, tid = self.clients[key].send(rcpt, a["subject"], a["body"], a.get("thread_id"), a.get("in_reply_to"))
         except Exception as exc:  # noqa: BLE001
@@ -240,7 +243,7 @@ class Runner:
         if detail:
             a["detail"] = detail
         shown = status if self.live or status != "done" else "dry-run"
-        self.log.action(self.now(), a["inbox"], a["kind"], self.cfg.inboxes[a["to"]].email, a["subject"], shown, detail)
+        self.log.action(self.now(), a["inbox"], a["kind"], self.cfg.recipient(a["to"]).email, a["subject"], shown, detail)
 
     # ------------------------------------------------------------ reporting
     def daily_rows(self, day: dt.date) -> list[dict]:
