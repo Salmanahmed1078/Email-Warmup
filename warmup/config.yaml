@@ -13,6 +13,11 @@ calendar:
   - {week: 3, range: [20, 30]}
   - {week: 4, range: [30, 35]}       # Week 4 and later
 
+# One-off: 7 Nov, bounce notices from an outside inbox-placement test (sent from salman@) were mistaken for
+# warm-up bounces. This clears that false alert/pause once. Notices that don't name a warm-up address are now ignored.
+reset_alert_id: "2026-11-07-placement-test-dsns"
+reset_bounces_since: "2026-11-07"
+
 hard_daily_cap: 35                  # Never exceeded per inbox per day, whatever the calendar says.
 gap_minutes: [5, 15]                # Gap between consecutive sends inside a sending burst.
 reply_delay_minutes: [20, 240]
