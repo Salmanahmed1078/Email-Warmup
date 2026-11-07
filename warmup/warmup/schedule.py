@@ -13,7 +13,8 @@ def week_number(cfg: Config, day: dt.date) -> int:
 
 
 def is_working_day(cfg: Config, day: dt.date) -> bool:
-    return not cfg.weekdays_only or day.weekday() < 5
+    extra = {str(d) for d in (cfg.raw.get("extra_working_days") or [])}
+    return not cfg.weekdays_only or day.weekday() < 5 or day.isoformat() in extra
 
 
 def target_range(cfg: Config, day: dt.date) -> tuple[int, int]:
