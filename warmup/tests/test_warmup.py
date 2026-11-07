@@ -12,8 +12,8 @@ CFG = config.load()
 def test_calendar_and_shift():
     assert target_range(CFG, dt.date(2026, 10, 22)) == (5, 10)
     assert target_range(CFG, dt.date(2026, 10, 29)) == (10, 15)
-    assert target_range(CFG, dt.date(2026, 11, 5)) == (15, 25)
-    assert target_range(CFG, dt.date(2026, 12, 1)) == (25, 35)
+    assert target_range(CFG, dt.date(2026, 11, 5)) == (20, 30)
+    assert target_range(CFG, dt.date(2026, 12, 1)) == (30, 35)
     assert target_range(CFG, dt.date(2026, 10, 24)) == (0, 0)  # Saturday
     CFG.start_date = dt.date(2026, 10, 26)
     try:
