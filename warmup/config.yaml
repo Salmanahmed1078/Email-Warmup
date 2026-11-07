@@ -3,6 +3,7 @@
 timezone: America/New_York          # Trilles AI, St. Petersburg FL
 start_date: 2026-10-22              # Week 1 day 1. A later date shifts every week by the same number of days.
 weekdays_only: true
+extra_working_days: [2026-11-07]   # one-off weekend days to send on (user asked to start today)
 working_hours: {start: "09:00", end: "17:00"}
 
 # Per inbox, per day: [min, max] emails (new sends + replies).
