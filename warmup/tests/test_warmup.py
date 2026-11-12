@@ -13,7 +13,7 @@ def test_calendar_and_shift():
     assert target_range(CFG, dt.date(2026, 10, 22)) == (5, 10)
     assert target_range(CFG, dt.date(2026, 10, 29)) == (10, 15)
     assert target_range(CFG, dt.date(2026, 11, 5)) == (20, 30)
-    assert target_range(CFG, dt.date(2026, 12, 1)) == (30, 35)
+    assert target_range(CFG, dt.date(2026, 12, 1)) == (20, 30)
     assert target_range(CFG, dt.date(2026, 10, 24)) == (0, 0)  # Saturday
     CFG.start_date = dt.date(2026, 10, 26)
     try:
@@ -47,7 +47,10 @@ def test_simulation_respects_caps_and_no_repeats(capsys):
     rows = list(csv.DictReader(open(CFG.data_dir / "sim" / "daily.csv")))
     for r in rows:
         lo, hi = target_range(CFG, dt.date.fromisoformat(r["date"]))
-        assert int(r["sent"]) + int(r["replied"]) <= min(hi, CFG.hard_daily_cap)
+        assert int(r["sent"]) <= min(hi, CFG.hard_daily_cap)
+        assert int(r["replied"]) <= CFG.reply_daily_cap
+        if lo >= 20:
+            assert int(r["sent"]) >= lo  # per-inbox spacing leaves room for the whole target
     acts = list(csv.DictReader(open(CFG.data_dir / "sim" / "actions.csv")))
     sends = [(a["inbox"], a["subject"].lower()) for a in acts if a["action"] == "send" and a["status"] == "ok"]
     assert len(sends) == len(set(sends))  # 15 days < 14-day window + weekends: no subject repeats at all
@@ -58,3 +61,29 @@ def test_bounce_stops_everything(capsys):
     main(["simulate", "--days", "2", "--bounce", "kinza"])
     out = capsys.readouterr().out
     assert "ALERT" in out and "stopped by alert" in out
+
+
+def test_old_plan_is_topped_up_midday():
+    from warmup import gmail
+    from warmup.logbook import Logbook
+    from warmup.runner import Runner
+    day = dt.date(2026, 11, 12)
+    clock = [CFG.at(day, dt.time(10, 15))]
+    world = gmail.FakeWorld(lambda: clock[0], spam_rate=0, rng=random.Random(1))
+    clients = {k: gmail.FakeClient(world, i, CFG) for k, i in CFG.inboxes.items()}
+    old = {"id": "20261112-awais-s0", "kind": "send", "inbox": "awais", "to": "kinza", "subject": "x",
+           "at": CFG.at(day, dt.time(9, 30)).isoformat(), "done_at": CFG.at(day, dt.time(9, 30)).isoformat(),
+           "status": "done", "template_id": "t", "values": {}, "body": "b"}
+    pending = dict(old, id="20261112-awais-s1", status="planned", at=CFG.at(day, dt.time(11)).isoformat())
+    state = {"days": {"2026-11-12": {"targets": {}, "planned": True, "rescued": {}}}, "actions": [old, pending],
+             "handled": {}, "bounces": [], "seen_bounces": {}, "alert": None, "paused": {}}
+    r = Runner(CFG, clients, state, Logbook(CFG.data_dir / "sim"), lambda: clock[0], True,
+               out=lambda m: None, sleep=lambda s: None, rng=random.Random(2))
+    planned = r.plan_day(day, clock[0])
+    assert pending["status"] == "skipped"
+    for key in CFG.inboxes:
+        target = state["days"]["2026-11-12"]["targets"][key][0]
+        mine = [a for a in planned if a["inbox"] == key]
+        assert len(mine) == target - (1 if key == "awais" else 0)
+        assert all(clock[0] < dt.datetime.fromisoformat(a["at"]) <= CFG.at(day, CFG.work_end()) for a in mine)
+    assert r.plan_day(day, clock[0]) == []  # only once

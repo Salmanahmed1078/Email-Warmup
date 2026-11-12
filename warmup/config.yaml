@@ -6,19 +6,21 @@ weekdays_only: true
 extra_working_days: [2026-11-07]   # one-off weekend days to send on (user asked to start today)
 working_hours: {start: "09:00", end: "17:00"}
 
-# Per inbox, per day: [min, max] emails (new sends + replies).
+# Per inbox, per day: [min, max] NEW emails. Replies come on top (up to reply_daily_cap).
+# (Until 12 Nov 2026 the ranges counted new sends + replies together.)
 calendar:
   - {week: 1, range: [5, 10]}
   - {week: 2, range: [10, 15]}
   - {week: 3, range: [20, 30]}
-  - {week: 4, range: [30, 35]}       # Week 4 and later
+  - {week: 4, range: [20, 30]}       # Week 4 and later: 20-30 new emails per inbox per day
 
 # One-off: 7 Nov, bounce notices from an outside inbox-placement test (sent from salman@) were mistaken for
 # warm-up bounces. This clears that false alert/pause once. Notices that don't name a warm-up address are now ignored.
 reset_alert_id: "2026-11-07-placement-test-dsns"
 reset_bounces_since: "2026-11-07"
 
-hard_daily_cap: 35                  # Never exceeded per inbox per day, whatever the calendar says.
+hard_daily_cap: 30                  # New emails: never exceeded per inbox per day, whatever the calendar says.
+reply_daily_cap: 25                 # Replies per inbox per day, on top of the new emails.
 gap_minutes: [5, 15]                # Gap between consecutive sends inside a sending burst.
 reply_delay_minutes: [20, 240]
 no_repeat_days: 14                  # Same subject never sent twice by the same inbox in this window.
