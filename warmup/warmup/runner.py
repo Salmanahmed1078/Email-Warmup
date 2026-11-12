@@ -15,6 +15,8 @@ from .config import Config
 from .logbook import Logbook
 from .schedule import is_working_day, target_range, week_number
 
+PLAN_VERSION = 2  # 2: calendar counts new sends only; per-inbox send spacing
+
 SPAM_REPORT = re.compile(r"spam|blocked|block list|blacklist|policy|5\.7\.\d|unsolicited", re.I)
 KEEP_DAYS = 30
 
@@ -45,32 +47,44 @@ class Runner:
         until = self.s["paused"].get(inbox)
         return bool(until) and day < dt.date.fromisoformat(until)
 
-    def _done_today(self, inbox: str, day: dt.date) -> int:
+    def _done_today(self, inbox: str, day: dt.date, kind: str | None = None) -> int:
         d = day.isoformat()
         return sum(1 for a in self.s["actions"]
-                   if a["inbox"] == inbox and a["status"] == "done" and a["done_at"][:10] == d)
+                   if a["inbox"] == inbox and a["status"] == "done" and a["done_at"][:10] == d
+                   and (kind is None or a["kind"] == kind))
 
     # ------------------------------------------------------------ planning
     def plan_day(self, day: dt.date, now: dt.datetime) -> list[dict]:
+        """Plan today's NEW sends. The calendar target counts new sends only; replies come on top.
+
+        Each inbox gets its own timeline (5-15 min gaps between its own sends). A day planned by the
+        older rules (plan_v < 2) is topped up once over the rest of the day.
+        """
         cfg, rng = self.cfg, self.rng
         info = self._day(day)
-        if info["planned"]:
+        if info["planned"] and info.get("plan_v") == PLAN_VERSION:
             return []
-        info["planned"] = True
+        topup = info["planned"]
+        info["planned"], info["plan_v"] = True, PLAN_VERSION
         lo, hi = target_range(cfg, day)
         start = max(cfg.at(day, cfg.work_start()), now + dt.timedelta(minutes=2))
         end = cfg.at(day, cfg.work_end()) - dt.timedelta(minutes=45)  # leave room for same-day replies
-        senders = []
+        slots = []
         for key in cfg.inboxes:
             if self.paused(key, day) or hi == 0:
                 info["targets"][key] = [0, lo, hi]
                 continue
             target = rng.randint(lo, hi)
             info["targets"][key] = [target, lo, hi]
-            senders += [key] * max(1, math.ceil(target * 0.6))  # the rest of the target is replies
-        senders = _interleave(senders, rng)
-        times = spread_times(len(senders), start, end, cfg.gap_minutes, rng)
-        senders = senders[:len(times)]
+            todays = [a for a in self.s["actions"] if a["inbox"] == key and a["kind"] == "send"
+                      and a["at"][:10] == day.isoformat()]
+            for a in todays:  # top-up: re-plan whatever is still pending on this inbox's own timeline
+                if a["status"] == "planned":
+                    self._finish(a, "skipped", "re-planned")
+            have = sum(1 for a in todays if a["status"] == "done")
+            slots += [(at, key) for at in spread_times(target - have, start, end, cfg.gap_minutes, rng)]
+        slots.sort()
+        senders, times = [k for _, k in slots], [t for t, _ in slots]
         cutoff = (day - dt.timedelta(days=cfg.no_repeat_days)).isoformat()
         pair_count: dict = {}
         planned = []
@@ -88,12 +102,12 @@ class Runner:
             used = {a["subject"].lower() for a in mine}
             recent = [a["template_id"] for a in sorted(mine, key=lambda a: a["at"])]
             email, values = content.pick_email(cfg, self.pool, sender, rcpt, rng, used, recent, day.weekday())
-            action = {"id": f"{day:%Y%m%d}-{sender_key}-s{i}", "kind": "send", "inbox": sender_key,
+            action = {"id": f"{day:%Y%m%d}-{sender_key}-{'t' if topup else 's'}{i}", "kind": "send", "inbox": sender_key,
                       "to": rcpt.key, "at": at.isoformat(), "subject": email.subject, "body": email.body,
                       "template_id": email.template_id, "values": values, "status": "planned"}
             self.s["actions"].append(action)
             planned.append(action)
-        self.out(f"{self.tag}Plan {day} (week {week_number(cfg, day)}, range {lo}-{hi}): "
+        self.out(f"{self.tag}{'Top-up plan' if topup else 'Plan'} {day} (week {week_number(cfg, day)}, range {lo}-{hi}): "
                  + ", ".join(f"{k} target {v[0]}" for k, v in info["targets"].items())
                  + f"; {len(planned)} new emails between {times[0]:%H:%M} and {times[-1]:%H:%M}"
                  if planned else f"{self.tag}Plan {day}: nothing to send (range {lo}-{hi})")
@@ -229,10 +243,13 @@ class Runner:
             if at.date() < day:
                 self._finish(a, "skipped", "missed its day (runner was not running)")
                 continue
+            if a["kind"] == "send" and at > cfg.at(day, cfg.work_end()):
+                self._finish(a, "skipped", "pushed past working hours")
+                continue
             if at > self.now():
                 self.sleep((at - self.now()).total_seconds())
-            # spacing: never two sends closer than the minimum gap, even after downtime
-            last = self.s.get("last_send_at")
+            # spacing: never two sends from the same inbox closer than the minimum gap, even after downtime
+            last = self.s.setdefault("last_send_by", {}).get(a["inbox"])
             gap_lo = cfg.gap_minutes[0]
             if last and self.now() - dt.datetime.fromisoformat(last) < dt.timedelta(minutes=gap_lo):
                 a["at"] = (dt.datetime.fromisoformat(last)
@@ -244,10 +261,13 @@ class Runner:
         cfg = self.cfg
         key = a["inbox"]
         target, lo, hi = self._day(day)["targets"].get(key, [0, *target_range(cfg, day)])
-        limit = min(cfg.hard_daily_cap, target if a["kind"] == "send" else max(hi, target))
+        if a["kind"] == "send":
+            limit = min(cfg.hard_daily_cap, target)
+        else:
+            limit = cfg.raw.get("reply_daily_cap", cfg.hard_daily_cap)
         if self.paused(key, day):
             return self._finish(a, "skipped", "inbox paused")
-        if self._done_today(key, day) >= limit:
+        if self._done_today(key, day, a["kind"]) >= limit:
             return self._finish(a, "skipped", f"daily limit {limit} reached")
         rcpt = cfg.recipient(a["to"])
         try:
@@ -257,6 +277,7 @@ class Runner:
             return self._finish(a, "failed", type(exc).__name__)
         a["gmail_id"], a["sent_thread"] = gid, tid
         self.s["last_send_at"] = self.now().isoformat()
+        self.s.setdefault("last_send_by", {})[key] = self.s["last_send_at"]
         self._finish(a, "done")
         self.out(f"{self.tag}{self.now():%H:%M} {key} -> {a['to']} {a['kind']}: {a['subject']!r} "
                  f"({len(a['body'].split())} words)")
@@ -328,17 +349,6 @@ class Runner:
     def next_due(self) -> dt.datetime | None:
         times = [dt.datetime.fromisoformat(a["at"]) for a in self.s["actions"] if a["status"] == "planned"]
         return min(times) if times else None
-
-
-def _interleave(items: list[str], rng: random.Random) -> list[str]:
-    """Shuffle so the same inbox rarely sends twice in a row."""
-    rng.shuffle(items)
-    out: list[str] = []
-    rest = items[:]
-    while rest:
-        choices = [i for i, x in enumerate(rest) if not out or x != out[-1]] or [0]
-        out.append(rest.pop(rng.choice(choices)))
-    return out
 
 
 def spread_times(n: int, start: dt.datetime, end: dt.datetime, gap: list[float],

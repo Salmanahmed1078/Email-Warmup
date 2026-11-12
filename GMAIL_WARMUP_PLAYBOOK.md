@@ -35,9 +35,9 @@ Cost: **$0** beyond the Workspace seats you already pay for.
 | 1 | 5–10 | No links, attachments or images. |
 | 2 | 10–15 | Still no links, attachments or images. |
 | 3 | 15–25 *(we raised it to 20–30)* | Cold email allowed by the plan, but start small. |
-| 4+ | 25–35 *(we raised it to 30–35)* | Hard cap: **35**, never exceeded. |
+| 4+ | 25–35 *(we run 20–30 new emails + replies on top)* | Hard caps: **30** new emails and **25** replies. |
 
-"Emails" = new sends **plus** replies. About 60% of the daily target is new sends; the rest are replies.
+From week 4 we count **new emails only**; replies come on top. Each mailbox keeps its own 5–15 minute gap between its sends (a gap shared by all mailboxes limits the whole group to ~45 emails a day).
 
 Working days only, Monday to Friday, 09:00–17:00 in the company timezone.
 
