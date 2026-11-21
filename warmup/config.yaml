@@ -12,15 +12,16 @@ calendar:
   - {week: 1, range: [5, 10]}
   - {week: 2, range: [10, 15]}
   - {week: 3, range: [20, 30]}
-  - {week: 4, range: [20, 30]}       # Week 4 and later: 20-30 new emails per inbox per day
+  - {week: 4, range: [20, 30]}
+  - {week: 5, range: [30, 35]}       # Week 5 and later (from 19 Nov 2026): 30-35 new emails per inbox per day
 
 # One-off: 7 Nov, bounce notices from an outside inbox-placement test (sent from salman@) were mistaken for
 # warm-up bounces. This clears that false alert/pause once. Notices that don't name a warm-up address are now ignored.
 reset_alert_id: "2026-11-07-placement-test-dsns"
 reset_bounces_since: "2026-11-07"
 
-hard_daily_cap: 30                  # New emails: never exceeded per inbox per day, whatever the calendar says.
-reply_daily_cap: 25                 # Replies per inbox per day, on top of the new emails.
+hard_daily_cap: 35                  # New emails: never exceeded per inbox per day, whatever the calendar says.
+reply_daily_cap: 30                 # Replies per inbox per day, on top of the new emails.
 gap_minutes: [5, 15]                # Gap between consecutive sends inside a sending burst.
 reply_delay_minutes: [20, 240]
 no_repeat_days: 14                  # Same subject never sent twice by the same inbox in this window.
@@ -47,7 +48,7 @@ inboxes:
 
 # Outside recipients (send-only seeds). Each inbox sends this share of its NEW emails to them instead of to
 # another warm-up inbox. Replies are done by hand; the tool never logs in to these accounts.
-external_share: 0.25
+external_share: 0.2                 # 80% of new emails go to the other warm-up inboxes, so each inbox gets ~24+ to reply to
 external_seeds:
   - {name: salman_gmail, email: salmansalu1078@gmail.com, full_name: Salman}
   - {name: awais_gmail, email: letsautomatewithawais@gmail.com, full_name: Awais}
