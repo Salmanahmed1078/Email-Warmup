@@ -13,7 +13,9 @@ def test_calendar_and_shift():
     assert target_range(CFG, dt.date(2026, 10, 22)) == (5, 10)
     assert target_range(CFG, dt.date(2026, 10, 29)) == (10, 15)
     assert target_range(CFG, dt.date(2026, 11, 5)) == (20, 30)
-    assert target_range(CFG, dt.date(2026, 12, 1)) == (20, 30)
+    assert target_range(CFG, dt.date(2026, 11, 18)) == (20, 30)  # week 4
+    assert target_range(CFG, dt.date(2026, 11, 23)) == (30, 35)  # week 5
+    assert target_range(CFG, dt.date(2026, 12, 1)) == (30, 35)   # later weeks keep the last range
     assert target_range(CFG, dt.date(2026, 10, 24)) == (0, 0)  # Saturday
     CFG.start_date = dt.date(2026, 10, 26)
     try:
